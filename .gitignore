@@ -30,3 +30,36 @@ npm-debug.log
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Cliente do MU (assets + binários proprietários da Webzen) — NUNCA commitar.
+# Mantemos só os helpers em client-pack/: build-pack.ps1, play.bat,
+# README.md, README.player.txt. Tudo o que for binário/asset fica fora.
+client-pack/Data/
+client-pack/Music/
+client-pack/Sound/
+client-pack/Object/
+client-pack/Player/
+client-pack/Lang/
+client-pack/Tile/
+client-pack/Effect/
+client-pack/Item/
+client-pack/Skill/
+client-pack/Interface/
+client-pack/Mob/
+client-pack/DropItem/
+client-pack/World*/
+client-pack/Screen/
+client-pack/replays/
+client-pack/GameGuard/
+client-pack/Webzen/
+client-pack/*.exe
+client-pack/*.dll
+client-pack/*.emu
+client-pack/*.des
+client-pack/*.ini
+client-pack/*.dat
+client-pack/*.log
+
+# Build output do build-pack.ps1
+dist/
+mumain-bin/
