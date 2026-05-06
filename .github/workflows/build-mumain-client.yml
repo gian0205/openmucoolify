@@ -66,7 +66,9 @@ jobs:
       - name: Setup MSVC env
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
+          # MuMain depende de libs externas em x86 (wzAudio.lib etc).
+          # Build x64 dá LNK1120 (unresolved externals + LNK4272 mismatch).
+          arch: x86
 
       - name: Mostrar versões
         shell: pwsh
@@ -75,9 +77,11 @@ jobs:
           dotnet --info | Select-Object -First 5
           cl.exe 2>&1 | Select-Object -First 1
 
-      - name: Configurar CMake (Release x64)
+      - name: Configurar CMake (Release Win32)
         working-directory: MuMain
-        run: cmake -B build -S . -A x64 -DCMAKE_BUILD_TYPE=Release
+        # -A Win32 = 32-bit. NÃO mude pra x64 sem antes substituir as
+        # libs externas (wzAudio, etc.) por versões 64-bit.
+        run: cmake -B build -S . -A Win32 -DCMAKE_BUILD_TYPE=Release
 
       - name: Build (Release)
         working-directory: MuMain
