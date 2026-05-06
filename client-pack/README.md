@@ -63,25 +63,46 @@ assets do MU (que VOCÊ tem)  +  binários MuMain  +  play.bat  +  LEIA-ME.txt
 
 - **Windows + PowerShell 5+** (ou PowerShell 7).
 - **Pasta com os assets do MU S6 EP3 1.04D English** num diretório local. Você é responsável por obtê-los — eles são copyright Webzen.
-- **Build do MuMain** descompactado em algum lugar (vem da CI [build-mumain-client.yml](../.github/workflows/build-mumain-client.yml)).
+- *(Recomendado)* **gh CLI logado** (`gh auth login`) — o script baixa o MuMain mais recente sozinho. Se não tiver, passa `-MuMainPath` manualmente.
 - *(Opcional)* **7-Zip no PATH** — torna a compactação ~10x mais rápida que o `Compress-Archive` nativo.
 
-### Uso
+### Fluxo recomendado (Caminho 2 — só MuMain, sem binários da Webzen)
 
 ```powershell
-# 1) Pega o build mais novo do MuMain do GitHub Releases (precisa do gh CLI logado)
-gh release download --repo gian0205/openmucoolify -p "MuPorcaria-Client-*.zip" -D .\mumain-bin
-Expand-Archive .\mumain-bin\*.zip -DestinationPath .\mumain-bin\unpacked
+# 0) Dropa só a pasta Data\ (e Music\, Sound\... se for layout antigo) do
+#    teu install do MU S6 EP3 dentro de  client-pack\ . NÃO precisa
+#    copiar Main.exe, Mu.exe, *.dll — o MuMain substitui isso.
 
-# 2) Monta o pack completo
+# 1) Limpa binários proprietários se sobraram (HShield, launcher Webzen,
+#    DLLs de runtime antigas). Dry-run primeiro:
+.\client-pack\purge-webzen.ps1
+# Se tudo bateu, apaga de fato:
+.\client-pack\purge-webzen.ps1 -Confirm
+
+# 2) Garante que existe pelo menos uma Release do MuMain no GitHub:
+#    https://github.com/gian0205/openmucoolify/actions
+#    → Build MuMain Client → Run workflow → marca create_release.
+#    (espera ~20 min na primeira vez)
+
+# 3) Monta o pack — o script baixa o MuMain sozinho via gh CLI:
 .\client-pack\build-pack.ps1 `
-    -AssetsPath  "D:\Games\MU-S6EP3" `
-    -MuMainPath  ".\mumain-bin\unpacked" `
-    -ServerHost  "mu.seudominio.com" `
-    -Version     "1.0"
+    -ServerHost "mu.seudominio.com" `
+    -Version    "1.0"
 
 # Saída: .\dist\MuPorcaria-Client-v1.0.zip
 ```
+
+`-AssetsPath` defaulta pra **a própria pasta `client-pack/`** (lê `$PSScriptRoot`). Se você preferir manter os assets fora do repo, passa explícito:
+
+```powershell
+.\client-pack\build-pack.ps1 `
+    -AssetsPath "D:\Games\MU-S6EP3" `
+    -MuMainPath ".\mumain-bin\unpacked" `
+    -ServerHost "mu.seudominio.com" `
+    -Version    "1.0"
+```
+
+> O script **ignora os helpers** (`build-pack.ps1`, `purge-webzen.ps1`, `play.bat`, `README*.*`) ao copiar pra staging via robocopy `/XF`. Ou seja, é seguro usar `client-pack/` como assets path mesmo com os helpers convivendo lá.
 
 ### O que o script faz
 

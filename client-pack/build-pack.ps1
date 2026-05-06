@@ -24,10 +24,15 @@
 [CmdletBinding()]
 param(
     # Pasta com os assets do MU original (Data/, Music/, Sound/, etc.)
-    [Parameter(Mandatory)] [string]$AssetsPath,
+    # Default: a própria pasta deste script (client-pack/) — útil quando
+    # você dropa o Data/ dentro de client-pack/ depois de rodar
+    # purge-webzen.ps1.
+    [string]$AssetsPath = $PSScriptRoot,
 
-    # Pasta com main.exe + dlls do MuMain (output do CI ou build local)
-    [Parameter(Mandatory)] [string]$MuMainPath,
+    # Pasta com main.exe + dlls do MuMain (output do CI ou build local).
+    # Se omitido, usa o gh CLI pra baixar a Release mais recente do repo
+    # gian0205/openmucoolify automaticamente.
+    [string]$MuMainPath,
 
     # Domínio (ou IP) do teu ConnectServer
     [Parameter(Mandatory)] [string]$ServerHost,
@@ -61,9 +66,6 @@ Step "Validando entradas"
 if (-not (Test-Path $AssetsPath -PathType Container)) {
     Fail "AssetsPath '$AssetsPath' não existe ou não é uma pasta."
 }
-if (-not (Test-Path $MuMainPath -PathType Container)) {
-    Fail "MuMainPath '$MuMainPath' não existe ou não é uma pasta."
-}
 
 $expectedAssetDirs = @("Data", "Object", "Player")  # tem que ter pelo menos um
 $foundAny = $false
@@ -75,6 +77,31 @@ if (-not $foundAny) {
     Warn "Confere se você apontou pra raiz do MU (não pra um zip ou subpasta)."
     $resp = Read-Host "Continuar mesmo assim? (s/N)"
     if ($resp -ne "s") { exit 1 }
+}
+
+# Auto-download do MuMain via gh CLI quando -MuMainPath foi omitido
+if (-not $MuMainPath) {
+    Step "MuMainPath não informado — baixando Release mais recente via gh CLI"
+    $gh = Get-Command gh -ErrorAction SilentlyContinue
+    if (-not $gh) {
+        Fail "gh CLI não encontrado. Instale (https://cli.github.com) ou passe -MuMainPath manualmente."
+    }
+    $dlDir = Join-Path $OutputDir "mumain-bin"
+    if (-not (Test-Path $dlDir)) { New-Item -ItemType Directory -Path $dlDir -Force | Out-Null }
+    & gh release download --repo gian0205/openmucoolify --pattern "MuPorcaria-Client-*.zip" --dir $dlDir --clobber
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Falhou ao baixar MuMain. Garanta que existe pelo menos uma Release no repo gian0205/openmucoolify (dispara a CI manualmente em Actions → Build MuMain Client)."
+    }
+    $zip = Get-ChildItem $dlDir -Filter "MuPorcaria-Client-*.zip" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $unpack = Join-Path $dlDir "unpacked"
+    if (Test-Path $unpack) { Remove-Item $unpack -Recurse -Force }
+    Expand-Archive -Path $zip.FullName -DestinationPath $unpack -Force
+    $MuMainPath = $unpack
+    Ok "MuMain baixado e descompactado em $MuMainPath"
+}
+
+if (-not (Test-Path $MuMainPath -PathType Container)) {
+    Fail "MuMainPath '$MuMainPath' não existe ou não é uma pasta."
 }
 
 $mumainBins = Get-ChildItem $MuMainPath -Filter "main.exe" -Recurse -ErrorAction SilentlyContinue
@@ -95,12 +122,18 @@ Ok "Staging em: $stage"
 
 # ── Copia assets ───────────────────────────────────────────────────────
 Step "Copiando assets do MU (pode demorar 30s–2min, dependendo do tamanho)"
-# Usa robocopy pra ser rápido e mostrar progresso. /XJ ignora junctions,
-# /R:0 não retenta em erro, /NFL/NDL/NP só pra log limpo.
+# Usa robocopy: rápido, com progresso. /XJ ignora junctions, /R:0 não
+# retenta erro, /NFL/NDL/NP/NJH = log limpo.
+# /XF e /XD excluem os helpers DESTE script — assim você pode usar
+# client-pack/ tanto como pasta de helpers quanto como AssetsPath sem
+# o script copiar a si mesmo pro pacote.
 $rcArgs = @(
     "`"$AssetsPath`"", "`"$stage`"",
     "/E", "/XJ", "/R:0", "/W:0",
-    "/NFL", "/NDL", "/NP", "/NJH"
+    "/NFL", "/NDL", "/NP", "/NJH",
+    "/XF", "build-pack.ps1", "purge-webzen.ps1", "play.bat",
+           "README.md", "README.player.txt", ".gitkeep",
+    "/XD", "dist", "mumain-bin", "staging", ".git"
 )
 $rcOut = & robocopy @rcArgs
 # robocopy retorna 0–7 como sucesso, 8+ erro
