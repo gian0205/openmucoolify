@@ -1,0 +1,24 @@
+# Clone do upstream OpenMU — não faz parte deste repo.
+# Mantenha-o local apenas como referência de código (Dockerfile, plugins, etc).
+OpenMU/
+
+# Variáveis de ambiente reais (use só .env.example versionado)
+.env
+.env.local
+.env.*.local
+
+# Dados do compose / Coolify rodando localmente
+data/
+volumes/
+logs/
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

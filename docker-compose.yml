@@ -1,0 +1,70 @@
+# OpenMU (MU Online Season 6 Episode 3) — Stack pronta para Coolify
+#
+# Como usar no Coolify:
+#   1. Crie um novo recurso "Docker Compose Empty"
+#   2. Cole este arquivo
+#   3. Salve. O Coolify vai gerar automaticamente:
+#        - Um FQDN/HTTPS pro painel admin (via SERVICE_FQDN_OPENMU_8080)
+#        - Uma senha forte pro Postgres (via SERVICE_PASSWORD_POSTGRES)
+#   4. Em "Settings", abra no firewall as portas TCP de jogo (44405-44406, 55901-55906, 55980)
+#   5. Deploy
+#
+# Detalhes em ./README.md
+
+services:
+  openmu:
+    image: munique/openmu:latest
+    restart: unless-stopped
+    working_dir: /app/
+    environment:
+      # Coolify vai injetar a URL pública (HTTPS + Let's Encrypt) apontando para a porta 8080
+      - SERVICE_FQDN_OPENMU_8080
+      # Banco
+      - DB_HOST=database
+      - DB_ADMIN_USER=postgres
+      - DB_ADMIN_PW=${SERVICE_PASSWORD_POSTGRES}
+      # Kestrel escuta na 8080 dentro do container
+      - ASPNETCORE_URLS=http://+:8080
+    ports:
+      # Connect Server (cliente original / open source)
+      - "44405:44405"
+      - "44406:44406"
+      # Game Servers (cada um é um sub-server visível no client)
+      - "55901:55901"
+      - "55902:55902"
+      - "55903:55903"
+      - "55904:55904"
+      - "55905:55905"
+      - "55906:55906"
+      # Chat Server
+      - "55980:55980"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=openmu
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+    volumes:
+      # IMPORTANTE: caminho correto é /var/lib/postgresql/data
+      # (o compose oficial usa /var/lib/postgresql, o que NÃO persiste os dados)
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d openmu"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  dbdata:
