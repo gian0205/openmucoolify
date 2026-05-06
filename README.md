@@ -8,6 +8,7 @@ Stack pronta para subir o servidor [OpenMU](https://github.com/MUnique/OpenMU) (
 - **Portas TCP de jogo** (Connect, Game, Chat) publicadas direto no host, como o cliente do MU exige.
 - **PostgreSQL 16** com volume persistente, healthcheck e senha gerada pelo Coolify.
 - **Página pública de cadastro** (Node + design dark fantasy "MU Porcaria") em outro subdomínio, plugada direto no Postgres do OpenMU. Veja [register-site/](register-site/).
+- **Build automático do cliente** (MuMain open source) via GitHub Actions no Windows runner — gera um zip pronto pros players. Veja [client-pack/](client-pack/) e [.github/workflows/build-mumain-client.yml](.github/workflows/build-mumain-client.yml).
 - Sem nginx + `.htpasswd` à parte — basic auth (se quiser) é configurada na própria UI do Coolify.
 
 ## Correções vs. compose oficial

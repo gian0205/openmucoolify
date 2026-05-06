@@ -1,0 +1,159 @@
+name: Build MuMain Client
+
+# Compila o cliente open source MuMain (https://github.com/sven-n/MuMain)
+# no Windows runner do GitHub Actions, empacota num zip junto com o play.bat
+# e o README do player, e disponibiliza como artifact (e como GitHub Release
+# quando você criar uma tag client-v*).
+#
+# Como disparar:
+#   - Botão manual: Actions → Build MuMain Client → Run workflow
+#   - Por tag:      git tag client-v0.1 && git push --tags
+#
+# IMPORTANTE: o zip NÃO inclui assets do jogo (Data/, Music/, Sound/,
+# Object/, Player/, Lang/...). Esses precisam vir do client original
+# Webzen S6 EP3 1.04D English. O player extrai esse zip POR CIMA da pasta
+# que tem os assets.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mumain_ref:
+        description: "Branch/tag/commit do sven-n/MuMain (default: main)"
+        required: false
+        default: "main"
+      create_release:
+        description: "Criar GitHub Release com o zip"
+        type: boolean
+        required: false
+        default: false
+  push:
+    tags:
+      - "client-v*"
+
+permissions:
+  contents: write   # necessário pra criar releases
+
+concurrency:
+  group: build-mumain-client-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build on Windows
+    runs-on: windows-2022
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout deste repo (helpers do client-pack)
+        uses: actions/checkout@v4
+        with:
+          path: openmucoolify
+
+      - name: Checkout MuMain
+        uses: actions/checkout@v4
+        with:
+          repository: sven-n/MuMain
+          ref: ${{ github.event.inputs.mumain_ref || 'main' }}
+          path: MuMain
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Setup MSVC env
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Mostrar versões
+        shell: pwsh
+        run: |
+          cmake --version
+          dotnet --info | Select-Object -First 5
+          cl.exe 2>&1 | Select-Object -First 1
+
+      - name: Configurar CMake (Release x64)
+        working-directory: MuMain
+        run: cmake -B build -S . -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build (Release)
+        working-directory: MuMain
+        run: cmake --build build --config Release --parallel
+
+      - name: Listar saídas do build
+        shell: pwsh
+        working-directory: MuMain
+        run: |
+          Write-Host "── EXEs e DLLs em build/ ──"
+          Get-ChildItem -Path build -Recurse -Include *.exe,*.dll -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -notmatch "CMakeFiles" } |
+            Select-Object FullName, Length |
+            Format-Table -AutoSize
+
+      - name: Stage do client pack
+        shell: pwsh
+        run: |
+          $stage = "client-pack-out"
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+
+          # Copia TODOS .exe e .dll do build (exceto subpastas internas do CMake)
+          $bins = Get-ChildItem -Path "MuMain/build" -Recurse -Include *.exe,*.dll -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -notmatch "CMakeFiles" }
+
+          if (-not $bins) {
+            Write-Error "Nenhum binário encontrado em MuMain/build — build provavelmente falhou silenciosamente."
+            exit 1
+          }
+
+          foreach ($f in $bins) {
+            Copy-Item $f.FullName -Destination $stage -Force
+          }
+
+          # Helpers do nosso client-pack/
+          Copy-Item "openmucoolify/client-pack/play.bat" "$stage/play.bat" -Force
+          Copy-Item "openmucoolify/client-pack/README.player.txt" "$stage/LEIA-ME.txt" -Force
+
+          Write-Host "── Conteúdo final do pack ──"
+          Get-ChildItem $stage | Select-Object Name, Length | Format-Table -AutoSize
+
+      - name: Empacotar zip
+        id: pack
+        shell: pwsh
+        run: |
+          $sha = "${{ github.sha }}".Substring(0,7)
+          $tag = "${{ github.ref_type == 'tag' && github.ref_name || '' }}"
+          $name = if ($tag) { "MuPorcaria-Client-$tag.zip" } else { "MuPorcaria-Client-$sha.zip" }
+          Compress-Archive -Path "client-pack-out/*" -DestinationPath $name -CompressionLevel Optimal
+          $size = [math]::Round((Get-Item $name).Length / 1MB, 2)
+          Write-Host "Zip pronto: $name ($size MB)"
+          "artifact_name=$name" | Out-File -Append $env:GITHUB_OUTPUT
+          "artifact_size_mb=$size" | Out-File -Append $env:GITHUB_OUTPUT
+
+      - name: Upload do artifact (sempre)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mumain-client
+          path: ${{ steps.pack.outputs.artifact_name }}
+          retention-days: 30
+
+      - name: Criar GitHub Release (se for tag client-v* ou checkbox marcado)
+        if: startsWith(github.ref, 'refs/tags/client-v') || github.event.inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.pack.outputs.artifact_name }}
+          name: ${{ github.ref_type == 'tag' && format('MuMain Client {0}', github.ref_name) || format('MuMain Client (manual {0})', github.run_number) }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('client-build-{0}', github.run_number) }}
+          body: |
+            Build automático do [sven-n/MuMain](https://github.com/sven-n/MuMain) em `${{ github.event.inputs.mumain_ref || 'main' }}`.
+
+            **Tamanho:** ${{ steps.pack.outputs.artifact_size_mb }} MB
+            **Commit do MuMain:** veja o passo "Checkout MuMain" do build.
+
+            ### Não inclui
+            Assets do jogo (`Data/`, `Music/`, `Sound/`, `Object/`, `Player/`, `Lang/`...). Esses vêm do client original Webzen S6 EP3 1.04D English. Extrai esse zip **por cima** dos assets.
+
+            ### Antes de rodar
+            Edita `play.bat` e troca `SET SERVER=seu-dominio.com` pelo domínio do teu servidor. Porta padrão é `44406`.
