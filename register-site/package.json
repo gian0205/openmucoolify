@@ -1,0 +1,20 @@
+{
+  "name": "openmu-register-site",
+  "version": "1.0.0",
+  "description": "Página pública de cadastro para servidor OpenMU (MU Online)",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "pg": "^8.13.1"
+  }
+}

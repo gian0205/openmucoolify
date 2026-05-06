@@ -7,6 +7,7 @@ Stack pronta para subir o servidor [OpenMU](https://github.com/MUnique/OpenMU) (
 - **Painel admin** (Blazor) exposto em HTTPS via Traefik do Coolify, com Let's Encrypt automático.
 - **Portas TCP de jogo** (Connect, Game, Chat) publicadas direto no host, como o cliente do MU exige.
 - **PostgreSQL 16** com volume persistente, healthcheck e senha gerada pelo Coolify.
+- **Página pública de cadastro** (Node + design dark fantasy "MU Porcaria") em outro subdomínio, plugada direto no Postgres do OpenMU. Veja [register-site/](register-site/).
 - Sem nginx + `.htpasswd` à parte — basic auth (se quiser) é configurada na própria UI do Coolify.
 
 ## Correções vs. compose oficial
@@ -33,10 +34,13 @@ Stack pronta para subir o servidor [OpenMU](https://github.com/MUnique/OpenMU) (
 2. Cole o conteúdo de [`docker-compose.yaml`](./docker-compose.yaml).
 3. Salve.
 
-### 3. Configurar o domínio
-- Em **Environment Variables** o Coolify já vai mostrar `SERVICE_FQDN_OPENMU_8080`.
-- Edite e coloque seu domínio: `https://admin.seuservidor.com`.
-- O Coolify cuida do certificado Let's Encrypt sozinho.
+### 3. Configurar os domínios
+Você precisa de **dois subdomínios** apontando pro IP do Coolify:
+
+- Em **Environment Variables** o Coolify mostra duas vars:
+  - `SERVICE_FQDN_OPENMU_8080` → painel admin. Ex.: `https://admin.seuservidor.com`
+  - `SERVICE_FQDN_REGISTER_3000` → página de cadastro. Ex.: `https://cadastro.seuservidor.com`
+- Coolify cuida dos certificados Let's Encrypt sozinho.
 
 ### 4. Senhas
 - `SERVICE_PASSWORD_POSTGRES` é gerada automaticamente. Não precisa mexer.
@@ -65,6 +69,18 @@ Em cloud (AWS/GCP/Hetzner), libere o mesmo range no security group / firewall do
 
 ### 8. Contas de teste
 Já vêm criadas: `test0`–`test9` (níveis 1–90), `test300`, `testgm`. Senha = nome do usuário.
+
+### 9. Cadastro público de jogadores
+
+Acesse `https://cadastro.seuservidor.com` (o que você definiu em `SERVICE_FQDN_REGISTER_3000`). Quem entrar consegue criar conta sozinho — o backend Node valida, gera hash BCrypt compatível com o `.NET BCrypt.Net` que o OpenMU usa, e dá `INSERT` direto em `data."Account"`.
+
+Restrições já aplicadas:
+- Login: 4–10 caracteres `[A-Za-z0-9_]` (limite de `varchar(10)` do schema do OpenMU).
+- Senha: 8–64 caracteres, hashed com BCrypt cost 11.
+- Rate limit: **3 cadastros por IP a cada 10 minutos** (configurável via `RATE_MAX` / `RATE_WINDOW_MS`).
+- `SecurityCode` é gerado aleatório (4 dígitos) — o jogador pode trocar depois pelo painel admin.
+
+Antes de abrir pro público vale colocar **captcha** (Cloudflare Turnstile, hCaptcha) e ativar o **basic auth do Coolify** num staging. Detalhes do mini-serviço em [register-site/](register-site/).
 
 ## Conectando o cliente
 

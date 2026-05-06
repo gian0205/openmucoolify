@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="index,follow" />
+<meta name="color-scheme" content="dark" />
+<title>MU Porcaria — Criar Conta</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-0: #07070a;
+    --bg-1: #0e0c0a;
+    --bg-2: #161210;
+    --bg-3: #1f1814;
+    --stone: #2a221c;
+    --stone-line: #3a2f25;
+    --parchment: #e8d9b0;
+    --parchment-dim: #b8a886;
+    --gold: #c9a14a;
+    --gold-bright: #e6c068;
+    --gold-deep: #7a5e22;
+    --ember: #e8612c;
+    --ember-deep: #b23d12;
+    --ink: #f4ecd6;
+    --ink-dim: #b8a886;
+    --ink-mute: #807058;
+    --danger: #e85a4f;
+    --ok: #6fa84a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: var(--bg-0);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Background scenery ── */
+  .scenery {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 70% 50% at 75% 30%, rgba(232,97,44,0.12), transparent 60%),
+      radial-gradient(ellipse 90% 60% at 20% 90%, rgba(201,161,74,0.08), transparent 60%),
+      radial-gradient(ellipse 100% 100% at 50% 0%, #1a1410 0%, #0a0807 60%, #050404 100%);
+  }
+  .scenery::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(232,97,44,0.04) 0, transparent 1px),
+      radial-gradient(circle at 70% 20%, rgba(201,161,74,0.05) 0, transparent 1px),
+      radial-gradient(circle at 40% 40%, rgba(255,255,255,0.02) 0, transparent 1px);
+    background-size: 3px 3px, 5px 5px, 2px 2px;
+    opacity: 0.5;
+  }
+  .scenery::after {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode: multiply; opacity: 0.4;
+  }
+
+  /* Floating embers */
+  .ember-particle {
+    position: fixed; width: 3px; height: 3px; border-radius: 50%;
+    background: var(--ember); box-shadow: 0 0 8px var(--ember), 0 0 2px #fff;
+    pointer-events: none; z-index: 1;
+    animation: rise linear infinite;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-110vh) translateX(40px); opacity: 0; }
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 40px;
+    border-bottom: 1px solid rgba(201,161,74,0.12);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 38px; height: 38px; position: relative;
+    display: grid; place-items: center;
+  }
+  .brand-mark .diamond {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold-deep));
+    transform: rotate(45deg);
+    box-shadow: 0 0 20px rgba(201,161,74,0.5), inset 0 0 0 1px rgba(255,255,255,0.2);
+  }
+  .brand-mark .diamond::after {
+    content: ''; position: absolute; inset: 8px;
+    background: var(--bg-1); transform: rotate(45deg);
+  }
+  .brand-mark .core {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ember); box-shadow: 0 0 10px var(--ember), 0 0 20px var(--ember-deep);
+  }
+  .brand-name {
+    font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 18px; letter-spacing: 0.18em;
+    color: var(--parchment); text-transform: uppercase;
+  }
+  .brand-name b { color: var(--gold-bright); }
+  .brand-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--ink-mute); letter-spacing: 0.15em; text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .topnav { display: flex; gap: 28px; align-items: center; }
+  .topnav a {
+    color: var(--ink-dim); text-decoration: none; font-size: 13px;
+    letter-spacing: 0.04em; font-weight: 500;
+    transition: color 0.15s;
+  }
+  .topnav a:hover { color: var(--gold-bright); }
+  .topnav .login-btn {
+    color: var(--gold-bright); padding: 8px 18px;
+    border: 1px solid rgba(201,161,74,0.3); border-radius: 2px;
+  }
+  .topnav .login-btn:hover {
+    background: rgba(201,161,74,0.08);
+    border-color: var(--gold);
+  }
+
+  /* ── Main layout ── */
+  .page {
+    position: relative; z-index: 5;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: calc(100vh - 83px);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Form column ── */
+  .form-col {
+    padding: 56px 64px 56px 40px;
+    display: flex; flex-direction: column;
+    justify-content: center;
+  }
+  .form-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em;
+    color: var(--ember); text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .form-eyebrow::before {
+    content: ''; width: 24px; height: 1px; background: var(--ember);
+  }
+  .form-title {
+    font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 44px; line-height: 1.05; letter-spacing: 0.01em;
+    color: var(--parchment); margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .form-title em {
+    font-style: normal; color: var(--gold-bright);
+    text-shadow: 0 0 24px rgba(230,192,104,0.3);
+  }
+  .form-sub {
+    font-size: 15px; color: var(--ink-dim);
+    margin: 0 0 36px; max-width: 460px;
+    text-wrap: pretty;
+  }
+  .form-sub b { color: var(--parchment); font-weight: 500; }
+
+  .form {
+    display: flex; flex-direction: column;
+    gap: 18px;
+    max-width: 460px;
+  }
+  .field {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .field label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--ink-dim); text-transform: uppercase;
+  }
+  .field-wrap {
+    position: relative; display: flex; align-items: center;
+  }
+  .field input {
+    width: 100%;
+    background: rgba(20,16,12,0.6);
+    border: 1px solid var(--stone-line);
+    color: var(--ink);
+    padding: 13px 16px 13px 44px;
+    font: inherit; font-size: 14px;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .field input::placeholder { color: var(--ink-mute); }
+  .field input:hover { border-color: rgba(201,161,74,0.35); }
+  .field input:focus {
+    border-color: var(--gold);
+    background: rgba(20,16,12,0.85);
+    box-shadow: 0 0 0 3px rgba(201,161,74,0.12), 0 0 18px rgba(201,161,74,0.08);
+  }
+  .field input[aria-invalid="true"] {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(232,90,79,0.12);
+  }
+  .field-icon {
+    position: absolute; left: 14px; width: 18px; height: 18px;
+    color: var(--ink-mute); pointer-events: none;
+    display: grid; place-items: center;
+  }
+  .field input:focus + .field-icon,
+  .field-wrap:focus-within .field-icon { color: var(--gold-bright); }
+
+  /* Compact two-up row for password fields */
+  .field-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 540px) {
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  .pw-meter {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 4px; margin-top: 6px;
+  }
+  .pw-meter span {
+    height: 3px; background: rgba(201,161,74,0.12); border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .pw-meter[data-strength="1"] span:nth-child(-n+1),
+  .pw-meter[data-strength="2"] span:nth-child(-n+2),
+  .pw-meter[data-strength="3"] span:nth-child(-n+3),
+  .pw-meter[data-strength="4"] span:nth-child(-n+4) { background: var(--gold-bright); }
+  .pw-meter[data-strength="1"] span:nth-child(-n+1) { background: var(--danger); }
+  .pw-meter[data-strength="2"] span:nth-child(-n+2) { background: var(--ember); }
+  .pw-meter[data-strength="3"] span:nth-child(-n+3) { background: #d4a84a; }
+  .pw-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; color: var(--ink-mute);
+    letter-spacing: 0.06em; margin-top: 4px;
+    display: flex; justify-content: space-between;
+  }
+  .pw-hint b { color: var(--parchment-dim); font-weight: 500; }
+
+  .checks { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+  .check {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: var(--ink-dim);
+    cursor: pointer; user-select: none;
+  }
+  .check input { display: none; }
+  .check-box {
+    flex-shrink: 0; width: 16px; height: 16px;
+    border: 1px solid var(--stone-line);
+    background: rgba(20,16,12,0.6);
+    border-radius: 2px;
+    margin-top: 2px;
+    display: grid; place-items: center;
+    transition: all 0.15s;
+  }
+  .check input:checked + .check-box {
+    border-color: var(--gold);
+    background: var(--gold);
+  }
+  .check input:checked + .check-box::after {
+    content: ''; width: 9px; height: 5px;
+    border-left: 2px solid var(--bg-1);
+    border-bottom: 2px solid var(--bg-1);
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  .check a { color: var(--gold-bright); text-decoration: none; }
+  .check a:hover { text-decoration: underline; }
+
+  /* Submit */
+  .submit {
+    position: relative;
+    margin-top: 12px;
+    padding: 16px 24px;
+    border: none;
+    background: linear-gradient(180deg, var(--ember) 0%, var(--ember-deep) 100%);
+    color: #fff;
+    font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 15px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.25),
+      inset 0 -1px 0 rgba(0,0,0,0.3),
+      0 0 0 1px var(--ember-deep),
+      0 8px 24px rgba(232,97,44,0.25);
+    transition: transform 0.1s, box-shadow 0.2s, filter 0.2s;
+  }
+  .submit:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      inset 0 -1px 0 rgba(0,0,0,0.3),
+      0 0 0 1px var(--ember-deep),
+      0 10px 32px rgba(232,97,44,0.4),
+      0 0 40px rgba(232,97,44,0.2);
+  }
+  .submit:active:not(:disabled) { transform: translateY(1px); }
+  .submit:disabled { cursor: progress; opacity: 0.85; }
+  .submit::before, .submit::after {
+    content: ''; position: absolute; top: 50%;
+    width: 6px; height: 6px;
+    background: var(--gold-bright);
+    transform: translateY(-50%) rotate(45deg);
+    box-shadow: 0 0 6px var(--gold-bright);
+  }
+  .submit::before { left: 14px; }
+  .submit::after { right: 14px; }
+
+  /* Form-wide message (error / success) */
+  .form-msg {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.05em;
+    padding: 12px 14px; border-radius: 2px;
+    border: 1px solid var(--stone-line);
+    background: rgba(20,16,12,0.6);
+    color: var(--ink-dim);
+  }
+  .form-msg.is-error {
+    color: var(--danger);
+    border-color: rgba(232,90,79,0.4);
+    background: rgba(232,90,79,0.08);
+  }
+  .form-msg.is-ok {
+    color: var(--ok);
+    border-color: rgba(111,168,74,0.4);
+    background: rgba(111,168,74,0.08);
+  }
+  .form-msg b { font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 0.06em; }
+
+  .form-foot {
+    margin-top: 22px;
+    font-size: 13px; color: var(--ink-mute);
+    text-align: center;
+  }
+  .form-foot a {
+    color: var(--gold-bright); text-decoration: none; font-weight: 500;
+  }
+  .form-foot a:hover { text-decoration: underline; }
+
+  /* ── Lore / status column ── */
+  .lore-col {
+    position: relative;
+    padding: 56px 40px 56px 64px;
+    border-left: 1px solid rgba(201,161,74,0.12);
+    display: flex; flex-direction: column;
+    gap: 28px;
+  }
+  .lore-col::before {
+    content: ''; position: absolute; left: -1px; top: 50%;
+    width: 1px; height: 80px;
+    background: linear-gradient(180deg, transparent, var(--gold), transparent);
+    transform: translateY(-50%);
+  }
+
+  /* Hero placeholder card */
+  .hero-card {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background:
+      repeating-linear-gradient(45deg,
+        rgba(201,161,74,0.04) 0,
+        rgba(201,161,74,0.04) 8px,
+        rgba(201,161,74,0.07) 8px,
+        rgba(201,161,74,0.07) 16px),
+      linear-gradient(160deg, var(--bg-3), var(--bg-1));
+    border: 1px solid var(--stone-line);
+    border-radius: 2px;
+    display: grid; place-items: center;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: ''; position: absolute; inset: 8px;
+    border: 1px solid rgba(201,161,74,0.15);
+    pointer-events: none;
+  }
+  .hero-card-corner {
+    position: absolute; width: 18px; height: 18px;
+    border: 1px solid var(--gold);
+  }
+  .hero-card-corner.tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+  .hero-card-corner.tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+  .hero-card-corner.bl { bottom: 12px; left: 12px; border-right: none; border-top: none; }
+  .hero-card-corner.br { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+  .hero-card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-mute);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    text-align: center;
+    padding: 8px 12px; background: rgba(7,7,10,0.5);
+    border: 1px solid rgba(201,161,74,0.2);
+  }
+
+  /* Status panel */
+  .status {
+    background: linear-gradient(180deg, rgba(20,16,12,0.6), rgba(10,8,6,0.6));
+    border: 1px solid var(--stone-line);
+    border-radius: 2px;
+    padding: 22px 24px;
+    position: relative;
+  }
+  .status::before {
+    content: ''; position: absolute; top: -1px; left: 24px; right: 24px;
+    height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .status-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .status-title {
+    font-family: 'Cinzel', serif; font-weight: 600;
+    font-size: 13px; letter-spacing: 0.2em;
+    color: var(--parchment); text-transform: uppercase;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ok);
+    padding: 4px 10px;
+    border: 1px solid rgba(111,168,74,0.4);
+    background: rgba(111,168,74,0.08);
+    border-radius: 999px;
+  }
+  .status-pill::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 8px var(--ok);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .status-pill.is-down {
+    color: var(--danger);
+    border-color: rgba(232,90,79,0.4);
+    background: rgba(232,90,79,0.08);
+  }
+  .status-pill.is-down::before { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.15); }
+  }
+
+  .status-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+  }
+  .stat {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .stat-num {
+    font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 24px; color: var(--gold-bright);
+    line-height: 1; letter-spacing: 0.02em;
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-mute);
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+
+  .rates {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding-top: 16px; margin-top: 16px;
+    border-top: 1px dashed rgba(201,161,74,0.15);
+  }
+  .rate-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.06em;
+    color: var(--parchment-dim);
+    padding: 5px 10px;
+    background: rgba(201,161,74,0.06);
+    border: 1px solid rgba(201,161,74,0.18);
+    border-radius: 2px;
+  }
+  .rate-chip b {
+    color: var(--gold-bright); font-weight: 600; font-family: 'Cinzel', serif;
+  }
+
+  /* Lore quote */
+  .lore-quote {
+    font-family: 'Cinzel', serif;
+    font-size: 14px; font-style: italic; line-height: 1.5;
+    color: var(--parchment-dim);
+    padding: 0 8px;
+    border-left: 2px solid var(--gold);
+    padding-left: 16px;
+  }
+  .lore-quote span {
+    display: block; margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace; font-style: normal;
+    font-size: 10px; color: var(--ink-mute);
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+
+  /* ── Bottom bar ── */
+  .footer {
+    position: relative; z-index: 5;
+    padding: 24px 40px; margin-top: 20px;
+    border-top: 1px solid rgba(201,161,74,0.08);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-mute);
+    letter-spacing: 0.1em;
+  }
+  .footer-links { display: flex; gap: 22px; }
+  .footer-links a { color: var(--ink-dim); text-decoration: none; }
+  .footer-links a:hover { color: var(--gold-bright); }
+
+  /* ── Responsive ── */
+  @media (max-width: 1024px) {
+    .page { grid-template-columns: 1fr; max-width: 600px; }
+    .form-col { padding: 40px 32px; }
+    .lore-col { padding: 0 32px 40px; border-left: none; }
+    .lore-col::before { display: none; }
+    .hero-card { aspect-ratio: 16 / 7; }
+  }
+  @media (max-width: 640px) {
+    .topbar { padding: 18px 22px; }
+    .topnav { gap: 14px; }
+    .topnav a:not(.login-btn) { display: none; }
+    .form-col { padding: 32px 22px; }
+    .lore-col { padding: 0 22px 32px; }
+    .form-title { font-size: 32px; }
+    .footer { padding: 20px 22px; flex-direction: column; align-items: flex-start; }
+  }
+
+  input[type="password"] { letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<div class="scenery"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <div class="diamond"></div>
+      <div class="core"></div>
+    </div>
+    <div>
+      <div class="brand-name">MU <b>Porcaria</b></div>
+      <div class="brand-tag">Season 6 EP3 · Hard Server</div>
+    </div>
+  </div>
+  <nav class="topnav">
+    <a href="#">Início</a>
+    <a href="#">Downloads</a>
+    <a href="#">Rankings</a>
+    <a href="#">Loja</a>
+    <a href="#" class="login-btn">Entrar</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <section class="form-col">
+    <div class="form-eyebrow">Recrutamento aberto</div>
+    <h1 class="form-title">Cria tua conta. Joga essa <em>porcaria</em> aí.</h1>
+    <p class="form-sub">
+      Sim, o nome é zoado de propósito. <b>O servidor não é.</b>
+      Hospedado no nosso bagulho, sem lag de promessa de marketing,
+      e com staff que responde no Discord (na maioria das vezes).
+    </p>
+
+    <form class="form" id="signup" autocomplete="off" novalidate>
+
+      <div class="field">
+        <label for="user">Nome de login</label>
+        <div class="field-wrap">
+          <input id="user" name="user" type="text" placeholder="ex: Porqueir42" maxlength="10" minlength="4" pattern="[A-Za-z0-9_]{4,10}" required />
+          <div class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="9" cy="6" r="3"></circle>
+              <path d="M3 16c1-3 3-5 6-5s5 2 6 5"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="email">E-mail</label>
+        <div class="field-wrap">
+          <input id="email" name="email" type="email" placeholder="usado pra recuperar conta, prometo" maxlength="100" required />
+          <div class="field-icon" aria-hidden="true">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="4" width="14" height="10" rx="1"></rect>
+              <path d="M2 5l7 5 7-5"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="pw">Senha</label>
+          <div class="field-wrap">
+            <input id="pw" name="pw" type="password" placeholder="••••••••" minlength="8" maxlength="64" required />
+            <div class="field-icon" aria-hidden="true">
+              <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="8" width="12" height="8" rx="1"></rect>
+                <path d="M6 8V5a3 3 0 0 1 6 0v3"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="pw2">Confirma aí</label>
+          <div class="field-wrap">
+            <input id="pw2" name="pw2" type="password" placeholder="••••••••" minlength="8" maxlength="64" required />
+            <div class="field-icon" aria-hidden="true">
+              <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 9l4 4 8-8"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="pw-meter" id="pwmeter" data-strength="0">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="pw-hint">
+          <span id="pwlabel">Força da senha</span>
+          <b>mín. 8 caracteres</b>
+        </div>
+      </div>
+
+      <div class="checks">
+        <label class="check">
+          <input id="terms" type="checkbox" required />
+          <span class="check-box"></span>
+          <span>
+            Li e aceito os <a href="#">Termos de Uso</a> e a
+            <a href="#">Política de Privacidade</a>. Prometo não chorar no chat geral.
+          </span>
+        </label>
+        <label class="check">
+          <input type="checkbox" />
+          <span class="check-box"></span>
+          <span>Quero receber avisos de eventos, manutenções e tretas no Discord.</span>
+        </label>
+      </div>
+
+      <div id="formMsg" class="form-msg" hidden></div>
+
+      <button type="submit" class="submit" id="submitBtn">Forjar minha conta</button>
+
+      <div class="form-foot">
+        Já tens conta? <a href="#">Entrar no servidor →</a>
+      </div>
+
+    </form>
+  </section>
+
+  <aside class="lore-col">
+
+    <div class="hero-card" role="img" aria-label="Arte do servidor">
+      <span class="hero-card-corner tl"></span>
+      <span class="hero-card-corner tr"></span>
+      <span class="hero-card-corner bl"></span>
+      <span class="hero-card-corner br"></span>
+      <div class="hero-card-label">key&nbsp;art / cinematic 16:9<br/>1280×720+</div>
+    </div>
+
+    <div class="status">
+      <div class="status-head">
+        <div class="status-title">Status do Reino</div>
+        <div class="status-pill" id="statusPill">Online</div>
+      </div>
+      <div class="status-grid">
+        <div class="stat">
+          <div class="stat-num" id="players">—</div>
+          <div class="stat-label">Players Online</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="uptime">—</div>
+          <div class="stat-label">Uptime</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="accounts">—</div>
+          <div class="stat-label">Contas Criadas</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="ping">—</div>
+          <div class="stat-label">Ping Médio (BR)</div>
+        </div>
+      </div>
+      <div class="rates">
+        <div class="rate-chip">EXP <b>500x</b></div>
+        <div class="rate-chip">DROP <b>40%</b></div>
+        <div class="rate-chip">Season <b>6 EP3</b></div>
+        <div class="rate-chip">Reset <b>auto</b></div>
+        <div class="rate-chip">Sem <b>P2W</b></div>
+      </div>
+    </div>
+
+    <blockquote class="lore-quote">
+      "Começou como uma zoeira no grupo do WhatsApp. Virou o servidor mais
+      estável que a gente já jogou. Daí o nome ficou."
+      <span>— A staff, provavelmente bêbada</span>
+    </blockquote>
+
+  </aside>
+</main>
+
+<footer class="footer">
+  <div>© 2026 MU PORCARIA · OPENMU · UNOFFICIAL FAN PROJECT</div>
+  <div class="footer-links">
+    <a href="#">Discord</a>
+    <a href="#">Wiki</a>
+    <a href="#">Suporte</a>
+    <a href="#">GitHub</a>
+  </div>
+</footer>
+
+<div id="embers" aria-hidden="true"></div>
+
+<script>
+  /* Embers */
+  (function () {
+    const root = document.getElementById('embers');
+    for (let i = 0; i < 18; i++) {
+      const e = document.createElement('div');
+      e.className = 'ember-particle';
+      e.style.left = (Math.random() * 100) + 'vw';
+      e.style.bottom = '-10px';
+      e.style.animationDuration = (8 + Math.random() * 12) + 's';
+      e.style.animationDelay = (-Math.random() * 20) + 's';
+      e.style.opacity = (0.4 + Math.random() * 0.6);
+      const s = 1 + Math.random() * 2.5;
+      e.style.width = e.style.height = s + 'px';
+      root.appendChild(e);
+    }
+  })();
+
+  /* Password strength */
+  (function () {
+    const pw = document.getElementById('pw');
+    const meter = document.getElementById('pwmeter');
+    const label = document.getElementById('pwlabel');
+    const labels = ['Força da senha', 'Fraca', 'Mais ou menos', 'Boa', 'Forte'];
+    pw.addEventListener('input', () => {
+      const v = pw.value;
+      let s = 0;
+      if (v.length >= 8) s++;
+      if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+      if (/\d/.test(v)) s++;
+      if (/[^A-Za-z0-9]/.test(v) || v.length >= 14) s++;
+      if (v.length === 0) s = 0;
+      meter.dataset.strength = s;
+      label.textContent = labels[s];
+    });
+  })();
+
+  /* Status do Reino — busca do backend */
+  (function () {
+    const $accounts = document.getElementById('accounts');
+    const $players = document.getElementById('players');
+    const $uptime = document.getElementById('uptime');
+    const $ping = document.getElementById('ping');
+    const $pill = document.getElementById('statusPill');
+    const fmt = new Intl.NumberFormat('pt-BR');
+
+    const startTs = Date.now();
+
+    async function refresh() {
+      try {
+        const r = await fetch('/api/stats', { cache: 'no-store' });
+        const d = await r.json();
+        if (d.ok) {
+          $accounts.textContent = fmt.format(d.accountsCreated ?? 0);
+          $pill.textContent = 'Online';
+          $pill.classList.remove('is-down');
+        } else {
+          throw new Error('stats not ok');
+        }
+      } catch {
+        $accounts.textContent = '—';
+        $pill.textContent = 'Offline';
+        $pill.classList.add('is-down');
+      }
+
+      // valores que o OpenMU não expõe via API ainda — placeholders honestos
+      $players.textContent = 'em jogo';
+      $ping.textContent = '~30ms';
+      const days = Math.max(0, Math.floor((Date.now() - startTs) / 86_400_000));
+      $uptime.innerHTML = days + '<small style="font-size:14px;color:var(--ink-mute);"> dias</small>';
+    }
+
+    refresh();
+    setInterval(refresh, 15_000);
+  })();
+
+  /* Submit real */
+  (function () {
+    const form = document.getElementById('signup');
+    const btn = document.getElementById('submitBtn');
+    const msg = document.getElementById('formMsg');
+
+    function showMsg(text, kind) {
+      msg.hidden = false;
+      msg.textContent = text;
+      msg.classList.toggle('is-error', kind === 'error');
+      msg.classList.toggle('is-ok', kind === 'ok');
+    }
+    function clearMsg() {
+      msg.hidden = true;
+      msg.textContent = '';
+      msg.classList.remove('is-error', 'is-ok');
+    }
+    function setInvalid(id, on) {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute('aria-invalid', on ? 'true' : 'false');
+    }
+
+    form.addEventListener('input', clearMsg);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      ['user','email','pw','pw2'].forEach(id => setInvalid(id, false));
+
+      const user = form.user.value.trim();
+      const email = form.email.value.trim();
+      const pw = form.pw.value;
+      const pw2 = form.pw2.value;
+      const terms = form.terms.checked;
+
+      if (!terms) {
+        showMsg('Aceita os termos primeiro, parça.', 'error');
+        return;
+      }
+      if (!/^[A-Za-z0-9_]{4,10}$/.test(user)) {
+        setInvalid('user', true);
+        showMsg('Login: 4–10 caracteres, só letras, números ou _.', 'error');
+        return;
+      }
+      if (pw.length < 8) {
+        setInvalid('pw', true);
+        showMsg('Senha precisa ter pelo menos 8 caracteres.', 'error');
+        return;
+      }
+      if (pw !== pw2) {
+        setInvalid('pw', true);
+        setInvalid('pw2', true);
+        showMsg('As senhas não batem.', 'error');
+        return;
+      }
+
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Forjando...';
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user, email, password: pw }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data.ok) {
+          btn.textContent = '✓ Conta criada, bem-vindo!';
+          btn.style.background = 'linear-gradient(180deg, #6fa84a, #4a7530)';
+          btn.style.boxShadow = '0 0 0 1px #4a7530, 0 8px 24px rgba(111,168,74,0.3)';
+          showMsg('Pronto, ' + data.login + '! Já dá pra entrar no client.', 'ok');
+          form.reset();
+          document.getElementById('pwmeter').dataset.strength = 0;
+          document.getElementById('pwlabel').textContent = 'Força da senha';
+          setTimeout(() => {
+            btn.textContent = orig;
+            btn.disabled = false;
+            btn.style.background = '';
+            btn.style.boxShadow = '';
+          }, 4000);
+        } else {
+          showMsg(data.error || 'Algo deu ruim. Tenta de novo.', 'error');
+          btn.textContent = orig;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        showMsg('Falha de rede. Confere tua conexão e tenta de novo.', 'error');
+        btn.textContent = orig;
+        btn.disabled = false;
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

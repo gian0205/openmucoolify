@@ -8,6 +8,7 @@
 #   2. Cole este arquivo
 #   3. Salve. O Coolify vai gerar automaticamente:
 #        - Um FQDN/HTTPS pro painel admin (via SERVICE_FQDN_OPENMU_8080)
+#        - Um FQDN/HTTPS pra página de cadastro (via SERVICE_FQDN_REGISTER_3000)
 #        - Uma senha forte pro Postgres (via SERVICE_PASSWORD_POSTGRES)
 #   4. Em "Settings", abra no firewall as portas TCP de jogo (44405-44406, 55901-55906, 55980)
 #   5. Deploy
@@ -68,6 +69,27 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+
+  # Página pública de cadastro de jogadores (insere direto na tabela
+  # data."Account" do OpenMU usando hash BCrypt compatível com BCrypt.Net).
+  # Coolify vai gerar HTTPS via SERVICE_FQDN_REGISTER_3000.
+  register:
+    build:
+      context: ./register-site
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - SERVICE_FQDN_REGISTER_3000
+      - PGHOST=database
+      - PGDATABASE=openmu
+      - PGUSER=postgres
+      - PGPASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - BCRYPT_ROUNDS=11
+      - RATE_MAX=3
+      - RATE_WINDOW_MS=600000
+    depends_on:
+      database:
+        condition: service_healthy
 
 volumes:
   dbdata:
