@@ -30,7 +30,7 @@ Stack pronta para subir o servidor [OpenMU](https://github.com/MUnique/OpenMU) (
 
 ### 2. Criar o recurso
 1. No projeto do Coolify, **+ New Resource → Docker Compose Empty**.
-2. Cole o conteúdo de [`docker-compose.yml`](./docker-compose.yml).
+2. Cole o conteúdo de [`docker-compose.yaml`](./docker-compose.yaml).
 3. Salve.
 
 ### 3. Configurar o domínio

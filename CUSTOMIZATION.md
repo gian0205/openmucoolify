@@ -125,7 +125,7 @@ docker build -f src/Startup/Dockerfile -t meu-openmu:custom .
 docker push registry.seu-dominio/meu-openmu:custom
 ```
 
-Depois, no `docker-compose.yml` deste repo, troque:
+Depois, no `docker-compose.yaml` deste repo, troque:
 
 ```yaml
 # de:

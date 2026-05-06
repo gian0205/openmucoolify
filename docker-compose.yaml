@@ -1,5 +1,8 @@
 # OpenMU (MU Online Season 6 Episode 3) — Stack pronta para Coolify
 #
+# IMPORTANTE: arquivo precisa se chamar docker-compose.yaml (com "a"),
+# que é o default que o Coolify procura na raiz do repositório.
+#
 # Como usar no Coolify:
 #   1. Crie um novo recurso "Docker Compose Empty"
 #   2. Cole este arquivo
