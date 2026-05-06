@@ -359,6 +359,48 @@
   }
   .form-foot a:hover { text-decoration: underline; }
 
+  /* Botão de download do cliente */
+  .download {
+    display: flex; flex-direction: column; gap: 4px;
+    margin-top: 24px;
+    padding: 16px 18px;
+    border: 1px solid var(--stone-line);
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(20,16,12,0.6), rgba(10,8,6,0.6));
+    text-decoration: none;
+    color: var(--ink); cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .download:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,161,74,0.08), 0 0 24px rgba(201,161,74,0.12);
+  }
+  .download[hidden] { display: none; }
+  .download-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .download-title {
+    font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 14px; letter-spacing: 0.12em;
+    color: var(--gold-bright); text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .download-title svg { width: 16px; height: 16px; }
+  .download-size {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--ink-dim);
+    letter-spacing: 0.06em;
+  }
+  .download-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-mute);
+    letter-spacing: 0.06em;
+    word-break: break-all;
+  }
+  .download-meta b { color: var(--parchment-dim); font-weight: 500; }
+
   /* ── Lore / status column ── */
   .lore-col {
     position: relative;
@@ -666,6 +708,23 @@
 
       <button type="submit" class="submit" id="submitBtn">Forjar minha conta</button>
 
+      <a id="downloadCard" class="download" href="#" hidden>
+        <div class="download-head">
+          <div class="download-title">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 2v10"/>
+              <path d="M5 8l4 4 4-4"/>
+              <path d="M3 15h12"/>
+            </svg>
+            <span>Baixar Cliente</span>
+          </div>
+          <span class="download-size" id="dlSize">—</span>
+        </div>
+        <div class="download-meta" id="dlMeta">
+          Empacotando o reino... <b>aguarda</b>
+        </div>
+      </a>
+
       <div class="form-foot">
         Já tens conta? <a href="#">Entrar no servidor →</a>
       </div>
@@ -771,6 +830,25 @@
       meter.dataset.strength = s;
       label.textContent = labels[s];
     });
+  })();
+
+  /* Botão de download do cliente — busca do backend */
+  (function () {
+    const card = document.getElementById('downloadCard');
+    const $size = document.getElementById('dlSize');
+    const $meta = document.getElementById('dlMeta');
+
+    fetch('/api/latest-client', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok || !d.url) return;  // mantém escondido se ainda não tem zip
+        card.href = d.url;
+        card.hidden = false;
+        $size.textContent = d.sizeHuman || '';
+        const sha = (d.sha256 || '').slice(0, 12);
+        $meta.innerHTML = `<b>${d.filename}</b> · sha256:${sha}…`;
+      })
+      .catch(() => { /* silencioso — não polui a UI */ });
   })();
 
   /* Status do Reino — busca do backend */

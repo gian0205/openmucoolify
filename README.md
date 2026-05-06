@@ -83,6 +83,38 @@ Restrições já aplicadas:
 
 Antes de abrir pro público vale colocar **captcha** (Cloudflare Turnstile, hCaptcha) e ativar o **basic auth do Coolify** num staging. Detalhes do mini-serviço em [register-site/](register-site/).
 
+### 10. Hospedar o zip do client (download direto do VPS)
+
+A própria página de cadastro pode oferecer o zip do client pra download (`https://cadastro.seuservidor.com/download/MuPorcaria-Client-vX.zip`), sem precisar de R2 / MEGA / serviço externo. Botão aparece automaticamente assim que existir um zip no volume.
+
+**Como subir o zip uma vez:**
+
+1. Gera o zip local com [`client-pack/build-pack.ps1`](client-pack/) (saída tipo `dist/MuPorcaria-Client-v1.0.zip`).
+2. Descobre o path do volume `openmu-downloads` no VPS:
+   ```bash
+   docker volume inspect $(docker volume ls -q | grep openmu-downloads) -f '{{ .Mountpoint }}'
+   # típico: /var/lib/docker/volumes/<stack>_openmu-downloads/_data
+   ```
+3. SCP do teu PC pra esse path:
+   ```bash
+   scp dist/MuPorcaria-Client-v1.0.zip \
+       root@SEU_VPS:/var/lib/docker/volumes/<stack>_openmu-downloads/_data/
+   ```
+
+   Alternativa sem precisar saber o path: copia direto pro container via `docker cp`:
+   ```bash
+   ssh root@SEU_VPS "docker cp - <container-register>:/app/downloads/" \
+       < dist/MuPorcaria-Client-v1.0.zip
+   ```
+
+4. Acessa `https://cadastro.seuservidor.com` — o card **Baixar Cliente** aparece com tamanho + sha256.
+
+**Importante:**
+- Nome do arquivo precisa bater no padrão `MuPorcaria-Client-*.zip` (regex no server).
+- O zip mais recente (por `mtime`) ganha — pode subir versões novas sem deletar as antigas.
+- Cada download eats banda do VPS. Se for ficar pesado (> 100 GB/mês), considera Cloudflare R2 (egress free) — explicado em [client-pack/README.md](client-pack/).
+- Rate limit padrão: 30 downloads / IP / hora (env `DOWNLOAD_RATE_MAX`).
+
 ## Conectando o cliente
 
 - Patch o cliente Season 6 Episode 3 pra apontar pro **Connect Server** em `seuservidor.com:44405` (cliente original) ou `:44406` (open source).

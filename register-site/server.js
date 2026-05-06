@@ -12,12 +12,15 @@
 //   RATE_WINDOW_MS   — janela de rate limit (default 600000 = 10 min)
 //   RATE_MAX         — máximo de cadastros por IP por janela (default 3)
 //   TRUST_PROXY      — "true" se atrás de Traefik/Coolify (default "true")
+//   DOWNLOADS_DIR    — pasta com os zips do client pra hospedar (default /app/downloads)
+//   DOWNLOAD_RATE_MAX — máximo de downloads por IP por janela (default 30)
 
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import pg from 'pg';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,6 +31,8 @@ const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS || 11);
 const RATE_WINDOW_MS = Number(process.env.RATE_WINDOW_MS || 10 * 60 * 1000);
 const RATE_MAX = Number(process.env.RATE_MAX || 3);
 const TRUST_PROXY = (process.env.TRUST_PROXY ?? 'true') !== 'false';
+const DOWNLOADS_DIR = process.env.DOWNLOADS_DIR || '/app/downloads';
+const DOWNLOAD_RATE_MAX = Number(process.env.DOWNLOAD_RATE_MAX || 30);
 
 const pool = new pg.Pool({
   host: process.env.PGHOST || 'database',
@@ -94,6 +99,100 @@ app.get('/api/stats', async (_req, res) => {
     res.json({ ok: false, accountsCreated: 0, status: 'unknown' });
   }
 });
+
+// ── Downloads ────────────────────────────────────────────────────────────
+// Serve zips do client a partir de DOWNLOADS_DIR (bind-mount no host).
+// O usuário sobe o zip via SCP pra esse diretório uma única vez.
+
+// Cache em memória do SHA-256 (recalculado quando o arquivo muda)
+const sha256Cache = new Map(); // path -> { mtimeMs, sha }
+
+function sha256Of(filePath, sizeBytes, mtimeMs) {
+  const cached = sha256Cache.get(filePath);
+  if (cached && cached.mtimeMs === mtimeMs) return Promise.resolve(cached.sha);
+  return new Promise((resolve, reject) => {
+    const h = crypto.createHash('sha256');
+    fs.createReadStream(filePath)
+      .on('data', c => h.update(c))
+      .on('end', () => {
+        const sha = h.digest('hex');
+        sha256Cache.set(filePath, { mtimeMs, sha });
+        resolve(sha);
+      })
+      .on('error', reject);
+  });
+}
+
+// Encontra o zip mais recente, valida que tá dentro de DOWNLOADS_DIR
+function findLatestClientZip() {
+  if (!fs.existsSync(DOWNLOADS_DIR)) return null;
+  const candidates = fs.readdirSync(DOWNLOADS_DIR)
+    .filter(n => /^MuPorcaria-Client-.*\.zip$/i.test(n))
+    .map(n => {
+      const full = path.join(DOWNLOADS_DIR, n);
+      try {
+        const st = fs.statSync(full);
+        return st.isFile() ? { name: n, full, size: st.size, mtimeMs: st.mtimeMs } : null;
+      } catch { return null; }
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return candidates[0] ?? null;
+}
+
+app.get('/api/latest-client', async (_req, res) => {
+  const z = findLatestClientZip();
+  if (!z) return res.json({ ok: false, error: 'no client uploaded yet' });
+  try {
+    const sha = await sha256Of(z.full, z.size, z.mtimeMs);
+    res.json({
+      ok: true,
+      filename: z.name,
+      url: `/download/${encodeURIComponent(z.name)}`,
+      sizeBytes: z.size,
+      sizeHuman: humanBytes(z.size),
+      sha256: sha,
+      uploadedAt: new Date(z.mtimeMs).toISOString(),
+    });
+  } catch (e) {
+    console.error('[sha256]', e);
+    res.json({ ok: false, error: 'failed to hash file' });
+  }
+});
+
+function humanBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1048576) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1073741824) return `${(n / 1048576).toFixed(1)} MB`;
+  return `${(n / 1073741824).toFixed(2)} GB`;
+}
+
+// Rate limit do download — generoso, mas evita scraping idiota
+const downloadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,            // 1h
+  max: DOWNLOAD_RATE_MAX,              // 30 downloads/h por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many downloads. Wait a bit.',
+});
+
+// Servir os zips com Content-Disposition pra forçar download e nome bonito
+if (fs.existsSync(DOWNLOADS_DIR)) {
+  app.use('/download', downloadLimiter, express.static(DOWNLOADS_DIR, {
+    index: false,                      // sem listagem (privacidade)
+    dotfiles: 'ignore',
+    fallthrough: false,                // 404 limpo se arquivo não existe
+    maxAge: '1d',
+    setHeaders: (res, p) => {
+      if (p.toLowerCase().endsWith('.zip')) {
+        res.setHeader('Content-Disposition', `attachment; filename="${path.basename(p)}"`);
+        res.setHeader('Content-Type', 'application/zip');
+      }
+    },
+  }));
+} else {
+  console.warn(`[downloads] ${DOWNLOADS_DIR} não existe — /download/* desativado.`);
+}
 
 // ── Registro ─────────────────────────────────────────────────────────────
 const registerLimiter = rateLimit({

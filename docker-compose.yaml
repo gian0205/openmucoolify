@@ -72,6 +72,7 @@ services:
 
   # Página pública de cadastro de jogadores (insere direto na tabela
   # data."Account" do OpenMU usando hash BCrypt compatível com BCrypt.Net).
+  # Também hospeda o zip do client em /download/* (volume openmu-downloads).
   # Coolify vai gerar HTTPS via SERVICE_FQDN_REGISTER_3000.
   register:
     build:
@@ -87,9 +88,17 @@ services:
       - BCRYPT_ROUNDS=11
       - RATE_MAX=3
       - RATE_WINDOW_MS=600000
+      - DOWNLOADS_DIR=/app/downloads
+      - DOWNLOAD_RATE_MAX=30
+    volumes:
+      # Coolify gerencia esse volume nomeado. Pra subir o zip do client,
+      # use SCP pra dentro do path do volume no host (ver README seção
+      # "10. Hospedar o zip do client") OU `docker cp` pro container.
+      - openmu-downloads:/app/downloads
     depends_on:
       database:
         condition: service_healthy
 
 volumes:
   dbdata:
+  openmu-downloads:
