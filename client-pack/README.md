@@ -47,6 +47,69 @@ MuPorcaria-Client-<sha>.zip
 
 Ele extrai esse zip POR CIMA dessas pastas → roda `play.bat`.
 
+---
+
+## Cliente FULL (com assets) — `build-pack.ps1`
+
+Quando você quer entregar **um zip único** que o player só extrai e roda — sem ter que ir caçar assets — usa o script PowerShell [`build-pack.ps1`](./build-pack.ps1). Ele junta:
+
+```
+assets do MU (que VOCÊ tem)  +  binários MuMain  +  play.bat  +  LEIA-ME.txt
+                          ↓
+              MuPorcaria-Client-vX.zip (1.5–2 GB)
+```
+
+### Requisitos
+
+- **Windows + PowerShell 5+** (ou PowerShell 7).
+- **Pasta com os assets do MU S6 EP3 1.04D English** num diretório local. Você é responsável por obtê-los — eles são copyright Webzen.
+- **Build do MuMain** descompactado em algum lugar (vem da CI [build-mumain-client.yml](../.github/workflows/build-mumain-client.yml)).
+- *(Opcional)* **7-Zip no PATH** — torna a compactação ~10x mais rápida que o `Compress-Archive` nativo.
+
+### Uso
+
+```powershell
+# 1) Pega o build mais novo do MuMain do GitHub Releases (precisa do gh CLI logado)
+gh release download --repo gian0205/openmucoolify -p "MuPorcaria-Client-*.zip" -D .\mumain-bin
+Expand-Archive .\mumain-bin\*.zip -DestinationPath .\mumain-bin\unpacked
+
+# 2) Monta o pack completo
+.\client-pack\build-pack.ps1 `
+    -AssetsPath  "D:\Games\MU-S6EP3" `
+    -MuMainPath  ".\mumain-bin\unpacked" `
+    -ServerHost  "mu.seudominio.com" `
+    -Version     "1.0"
+
+# Saída: .\dist\MuPorcaria-Client-v1.0.zip
+```
+
+### O que o script faz
+
+1. **Valida** que `AssetsPath` parece um install de MU (procura por `Data/`, `Object/` ou `Player/`).
+2. **Copia tudo via robocopy** pra uma pasta de staging.
+3. **Remove lixo da Webzen** que o MuMain não usa: `GameGuard/`, `*.des`, `OnePunch.dll`, `CSAuth*.dll`, `Patcher.exe`, `Launcher.exe`, `Update*.exe`, `Settings.ini`, `version.dat`, screenshots/replays do install antigo, logs.
+4. **Sobrescreve binários** com os do MuMain (`main.exe` + DLLs).
+5. **Gera `play.bat`** com `SERVER=mu.seudominio.com PORT=44406` já preenchidos (CRLF, sem BOM — exigência do `cmd.exe`).
+6. **Substitui placeholder no `LEIA-ME.txt`** pelo teu domínio.
+7. **Compacta** com 7-Zip (se tiver) ou `Compress-Archive`.
+8. **Imprime** path, tamanho, SHA-256.
+
+### Hospedagem do zip pronto
+
+Pra colocar disponível pra download dos players:
+
+| Onde | Bom pra | Custo |
+|---|---|---|
+| **Cloudflare R2** + bucket público | tráfego alto, links permanentes | $0.015/GB armazenado, **egress de graça** |
+| **Backblaze B2** | mesma coisa, alternativa | $0.006/GB armazenado, $0.01/GB egress |
+| **MEGA / Mediafire / Drive** | começo rápido, sem cartão | grátis até X GB, links às vezes morrem |
+| **Discord (canal #downloads)** | mais simples impossível | grátis, mas Discord limita tamanho de upload (25 MB free, 500 MB nitro) — não serve pra 2 GB |
+| **Coolify** mesmo (volume) | já tá ali | sem CDN, vai consumir banda do VPS |
+
+**Recomendação:** Cloudflare R2. ~$0.03/mês pra 2 GB, sem custo de download. Liga ao DNS `download.seudominio.com` e linka na página de cadastro.
+
+---
+
 ## Pré-edição do play.bat antes de distribuir
 
 Se quiser poupar o player de editar o `.bat`, edita você mesmo o `play.bat` deste diretório antes de rodar a CI:
