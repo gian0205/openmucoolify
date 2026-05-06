@@ -1,4 +1,4 @@
-# build-pack.ps1
+﻿# build-pack.ps1
 #
 # Monta o client final do MU Porcaria juntando:
 #   - Assets do MU S6 EP3 1.04D English (que você tem localmente)

@@ -1,4 +1,4 @@
-# purge-webzen.ps1
+﻿# purge-webzen.ps1
 #
 # Apaga os binários proprietários da Webzen do client-pack/, deixando só
 # os assets (Data/, Music/, Sound/, etc.) e os helpers (build-pack.ps1,
